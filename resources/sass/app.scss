@@ -1,0 +1,32 @@
+@tailwind base;
+
+@tailwind components;
+
+@tailwind utilities;
+
+.text-shadow-inset {
+  background-color: #ffffff;
+  color: transparent;
+  text-shadow: 0px 2px 3px rgba(255,255,255,0.5);
+  -webkit-background-clip: text;
+     -moz-background-clip: text;
+          background-clip: text;
+}
+
+.inset-text {
+    /* Shadows are visible under slightly transparent text color */
+    text-shadow: 1px 4px 6px #def, 0 0 0 #000, 1px 4px 6px #def;
+}
+
+ // fonts section
+ .font-basic {
+	font-family: 'Poppins', sans-serif;
+ }
+
+ .font-cursive {
+	font-family: 'Pacifico', cursive;
+ }
+
+ .font-comic {
+	font-family: 'Comic Neue', cursive;
+ }
