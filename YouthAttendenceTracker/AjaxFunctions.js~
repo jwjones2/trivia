@@ -1,0 +1,249 @@
+var teamIdAdd;   // a global variable to use to pass the team id of the team to add a new visitor to to addVisitorAjax
+
+/*******************************************************************************
+ * Function addVisitorAjax
+ *
+ * Description:  Used to add a visitor on the fly for SignUp.php using AJAX.
+ *	This is done by building a string to use in POST, to send to PHP page.
+ *	The string is built from the form elements.  The function also performs
+ *	validation to make sure First and Last Name are not blank and are strings
+ *	and also that DOB has been entered.
+ *
+ * Input variable: n/a
+ *
+ * Return type: n/a
+ ******************************************************************************/
+function addVisitorAjax ()
+{
+	/*  FIRST CALL hideVisitorAdd to clear the page while the request is being processed */
+	hideAddVisitor();
+	
+	/* BUILD THE POST STRING FROM FORM ELEMENTS */
+	var postString = "";   // variable to store post string to send
+	
+	// set the teamId value of postString
+	postString += "teamId=" + teamIdAdd + "&";
+	
+	// set the pickVisitor value
+	postString += "pickVisitor=" + document.getElementById('pickVisitor').value + "&";
+	
+	/* FIRST CHECK THAT THE VISITOR IS NOT ALREADY IN DB, I.E. pickVisitor != "newVisitor"
+	   If set postValue of pickVisitor and send the request */
+	if ( document.getElementById('pickVisitor').value != 'newVisitor' ) 
+	{
+		/* OPEN AND SEND THE POST REQUEST EARLY SINCE VISITOR ALREADY IN DB */
+		xmlhttp.open("POST","./AddVisitor.php",true);
+		xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=UTF-8");			
+		xmlhttp.send(postString);
+		
+		return;  // exit function since done with request
+	}
+		
+	
+	postString += "FirstName=" + document.getElementById('FirstName').value + "&";
+	postString += "LastName=" + document.getElementById('LastName').value + "&";
+	postString += "MiddleName=" + document.getElementById('MiddleName').value + "&";
+	postString += "NickName=" + document.getElementById('NickName').value + "&";
+	postString += "DOB=" + document.getElementById('dobYear').value + "-" + document.getElementById('dobMonth').value + "-" + document.getElementById('dobDay').value + "&";
+	if ( document.getElementById('male').checked )
+		postString += "Sex=male&";
+	else if ( document.getElementById('female').checked )
+		postString += "Sex=female&";
+	else
+	{
+		alert("You must select a Sex:  male or female.");
+		return;
+	}
+	postString += "Email=" + document.getElementById('Email').value + "&";
+	postString += "CellPhone=" + document.getElementById('CellPhone').value + "&";
+	if ( document.getElementById('CanReceiveTxt').checked )
+		postString += "CanReceiveTxt=yes&";
+	else
+		postString += "CanReceiveTxt=no&";
+	if ( document.getElementById('Facebook').checked )
+		postString += "Facebook=yes&";
+	else
+		postString += "Facebook=no&";
+	postString += "StreetAddress=" + document.getElementById('StreetAddress').value + "&";
+	postString += "Zip=" + document.getElementById('Zip').value + "&";
+	postString += "Notes=" + document.getElementById('Notes').value;
+	
+	/* VALIDATE THE APPROPRIATE FIELDS */
+	// FirstName
+	var firstname = document.getElementById('FirstName').value;
+	if ( !validateBlank(firstname) ) 
+	{
+		alert("First name cannot be blank.");
+		return;  // break out of function
+	}
+	
+	if ( !validateString(firstname) )
+	{
+		alert("First name must be a string.");
+		return;  // break out of function
+	}
+	
+	// LastName
+	var lastname = document.getElementById('LastName').value;
+	if ( !validateBlank(lastname) ) 
+	{
+		alert("Last name cannot be blank.");
+		return;  // break out of function
+	}
+	
+	if ( !validateString(lastname) )
+	{
+		alert("Last name must be a string.");
+		return;  // break out of function
+	}
+	
+	// DOB must be changed from default
+	var d = new Date();  // date object to use to get the year
+	if ( document.getElementById('dobYear').value == d.getFullYear() )  // year has not been changed
+	{
+		alert("You must enter a date of birth.");
+		return;  // break out of function
+	}
+		
+	/* OPEN AND SEND THE POST REQUEST */
+	xmlhttp.open("POST","./AddVisitor.php",true);
+	xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=UTF-8");			
+	xmlhttp.send(postString);
+}
+
+var fieldCounter; // global variable to use to keep track of last field counter written to sign-up page
+
+/*******************************************************************************
+ * Function addVisitorRow
+ *
+ * Description:  Adds a new visitor to the team of the student that brought the visitor.
+ *	This is done by creating the row using DOM elements and then appending the row
+ *	as a child to the teams table using teamID to get the table in the DOM.
+ *
+ * Input variable: Array of Visitor information, document element where to append child (row)
+ *
+ * Return type: n/a
+ ******************************************************************************/
+function addVisitorRow ( data, docElement)
+{
+	var tr = document.createElement('tr');   // first create the tr to eventually append to table
+	
+	var td = document.createElement('td');   // create the first td to add to tr
+	
+	var txt = "";   // variable to use to hold text of td as building
+	
+	/* Name */
+	txt += data[1] + ' ';  // the first name
+	// check for middle name and write if set
+	if ( data[3] )         // there is a nick name
+		txt += '"' + data[3] + '" ';
+	txt += data[2];        // the last name
+	var tNode = document.createTextNode(txt);  // create a text node with content of td
+	td.appendChild(tNode);                     // append the text node to td
+	tr.appendChild(td);                        // append td to tr
+	
+	/* Here */
+	td = document.createElement('td');            // create a new td
+	var input = document.createElement('input');  // create an input element to append to td
+	// set the input attributes
+	input.setAttribute('type', 'checkbox');
+	input.setAttribute('name', data[0] + '_Here');
+	input.setAttribute('class', 'signup_checkbox');
+	input.setAttribute('onclick', 'enableFields(' + fieldCounter + ')');
+	td.appendChild(input);                        // append input to td
+	tr.appendChild(td);                           // append td to tr
+	
+	/* SunSch */
+	td = document.createElement('td');            // create a new td
+	input = document.createElement('input');      // create an input element to append to td
+	// set the input attributes
+	input.setAttribute('type', 'checkbox');
+	input.setAttribute('name', data[0] + '_SunSch');
+	input.setAttribute('class', 'signup_checkbox');
+	input.setAttribute('id', ++fieldCounter);
+	input.setAttribute('disabled', 'disabled');
+	td.appendChild(input);                        // append input to td
+	tr.appendChild(td);                           // append td to tr
+	
+	/* SunAM */
+	td = document.createElement('td');            // create a new td
+	input = document.createElement('input');      // create an input element to append to td
+	// set the input attributes
+	input.setAttribute('type', 'checkbox');
+	input.setAttribute('name', data[0] + '_SunAM');
+	input.setAttribute('class', 'signup_checkbox');
+	input.setAttribute('id', ++fieldCounter);
+	input.setAttribute('disabled', 'disabled');
+	td.appendChild(input);                        // append input to td
+	tr.appendChild(td);                           // append td to tr
+	
+	/* SunPM */
+	td = document.createElement('td');            // create a new td
+	input = document.createElement('input');      // create an input element to append to td
+	// set the input attributes
+	input.setAttribute('type', 'checkbox');
+	input.setAttribute('name', data[0] + '_SunPM');
+	input.setAttribute('class', 'signup_checkbox');
+	input.setAttribute('id', ++fieldCounter);
+	input.setAttribute('disabled', 'disabled');
+	td.appendChild(input);                        // append input to td
+	tr.appendChild(td);                           // append td to tr
+	
+	/* Bible */
+	td = document.createElement('td');            // create a new td
+	input = document.createElement('input');      // create an input element to append to td
+	// set the input attributes
+	input.setAttribute('type', 'checkbox');
+	input.setAttribute('name', data[0] + '_Bible');
+	input.setAttribute('class', 'signup_checkbox');
+	input.setAttribute('id', ++fieldCounter);
+	input.setAttribute('disabled', 'disabled');
+	td.appendChild(input);                        // append input to td
+	tr.appendChild(td);                           // append td to tr
+	
+	/* Visitor */
+	td = document.createElement('td');            // create a new td
+	var div = document.createElement('div');      // div for visitor section
+	// set the divs attributes
+	div.setAttribute('id', 'Visitor_' + ++fieldCounter);
+	div.setAttribute('class', 'vistorsAdded');
+	td.appendChild(div);                          // append the div to td
+	
+	input = document.createElement('input');      // create an input element to append to td
+	// set the input attributes
+	input.setAttribute('type', 'hidden');
+	input.setAttribute('name', data[0] + '_Visitors');
+	input.setAttribute('id', fieldCounter);
+	input.setAttribute('value', '0');
+	td.appendChild(input);                        // append input to td
+	tr.appendChild(td);                           // append td to tr
+	
+	/* APPEND THE TR TO TABLE USING teamIdAdd as reference */
+	document.getElementById('Team_' + teamIdAdd).appendChild(tr);
+	
+	/*
+	// First, save the current html in the element
+	var newContent = docElement.innerHTML;  // store in newContent to build the new output	
+	
+	// build the row
+	
+	newContent += '<td>' + data[1] + ' ';
+	if ( data[3] ) // there is a nick name
+		newContent += '"' + data[3] + '" ';
+	newContent += data[2] + '</td>';
+	
+	
+	newContent += '<td><input type="checkbox" name="' + data[0] + '_Here" class="signup_checkbox" onclick="enableFields(' + fieldCounter + ');" /></td>';
+	newContent += '<td><input type="checkbox" name="' + data[0] + '_Here" class="signup_checkbox" id="' + ++fieldCounter + '" disabled="disabled" /></td>';
+        newContent += '<td><input type="checkbox" name="' + data[0] + '_SunAM" class="signup_checkbox" id="' + ++fieldCounter + '" disabled="disabled" /></td>';
+        newContent += '<td><input type="checkbox" name="' + data[0] + '_SunPM" class="signup_checkbox" id="' + ++fieldCounter + '" disabled="disabled" /></td>';
+        newContent += '<td><input type="checkbox" name="' + data[0] + '_Bible" class="signup_checkbox" id="' + ++fieldCounter + '" disabled="disabled" /></td>';
+        newContent += '<td><div id="Visitor_' + ++fieldCounter + '" class="visitorsAdded"></div><input type="hidden" name="' + data[0] + '_Visitors" id="' + fieldCounter + '" value="0" /></td>';
+        newContent += ''; // end row
+	
+	// append to input document element
+	docElement.innerHTML = newContent;
+	*/
+}
+
+

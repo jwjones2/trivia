@@ -1,0 +1,159 @@
+<?php
+	/********************************************************
+	 * AddVisitor.php
+	 *
+	 * Description:  Adds a visitor by inserting Attendee and
+	 *	Student into tables and returning the FirstName, LastName
+	 *	and ID packed for an AJAX response.  Also, add the visitor to 
+	 *	the team of the person who brought them.  An addition return value
+	 *	is returned indicating whether the student needs to be added to
+	 *	the team; if they are an eligible visitor but already on a team
+	 *	do not add them to the team again.
+	 *	**First check that the visitor is not already in the DB.  If so
+	 *	simply return the id and student name.
+	 ********************************************************/
+	 
+	 /********************************************************
+	 * Database Connection section.
+	 ********************************************************/
+	// Connect to the db; use MYSQL_helper.php for mysql login
+	require_once('MYSQL_helper.php');
+	$db = db_connect( );
+
+	// set the error variable to hold db errors; set to empty string
+	$error = "";	
+	
+	// Check that connection was successful and send if not
+	if ( $db->connect_error ) {
+		echo 'error|There was a problem connecting to the database.';
+		exit();  // cannot continue since no connection established
+	}
+	
+	/*** INCLUDE SECTION for helper classes  ***/
+	require_once('DBTable.php');       // the DBTable superclass
+	require_once('Table_helper.php');  // the sub classes of DBTable to handle db table interactions
+	require_once('HTML_helper.php');   // functions for handling HTML output and manipulation
+	
+	
+
+	 /*** 
+	   CHECK THAT VISITOR IS NOT ALREADY IN DB:  check $_POST['pickVisitor'] 
+	   if $_POST['pickVisitor'] != 'newVisitor' then the visitor is alreay in
+	   db and their ID was passed in pickVisitor; use that ID to check whether 
+	   they are already on a team: if so, set addVisitor accordingly, if not 
+	   add to team.
+	 ***/
+	if ( $_POST['pickVisitor'] != 'newVisitor' ) // not a new visitor
+	{
+		/* FIRST CHECK THAT VISITOR IS ON THE TEAM ALREADY; IF NOT ADD TO TEAM; SET RETURN VALUE ACCORDINGLY */
+		// get the attendee id by splitting pickVisitor by |, first element will be id
+		$visitorInfo = explode('|', $_POST['pickVisitor']);
+		
+		// build the query to check teamlist
+		$query = 'SELECT ID FROM teamlist WHERE TeamID = ' . $_POST['teamId'] . ' AND AttendeeID = ' . $visitorInfo[0] . ';';
+		if ( $result = $db->query($query) )
+		{
+			if ( $result->num_rows == 0 )  // visitor is not on the team, not found in teamlist table
+			{
+				/* add to teamlist table */
+				$query = 'INSERT INTO teamlist (TeamID, AttendeeID) VALUES (' . $_POST['teamId'] . ', ' . $visitorInfo[0] . ');';  // build the query
+				if ( $db->query($query) ) // query and check for success
+					printf('%s|add', $_POST['pickVisitor']);  // send back visitor info stored in pickVisitor along with flag telling to add to team
+				else  // error adding visitor to team so return error
+					printf('error|Could not add visitor to team.  Please try again.');
+					
+				exit();  // exit since done
+			}
+			else   // visitor is alreay on team
+			{
+				printf('%s|noadd', $_POST['pickVisitor']);  // send back visitor info stored in pickVisitor along with flag telling not to add to team
+				exit();  // exit since done
+			}
+		}
+		else   // error checking whether visitor in on a team so nothing was done, print error and exit
+		{
+			echo 'error|Could not add visitor.  Please try again.';
+			exit(); 
+		}
+	}
+	 
+	// set value of SubDiscriminator for attendee type to be student
+        $_POST['SubDiscriminator'] = "student";
+        		
+        // set the active field to true
+        $_POST['Active'] = "yes";
+	
+	/**  
+            NOW, Create a new Attendee and student object and then call
+              functions to execute the bound query insertion into db.
+         **/
+        $attendee = new Attendee($db, $_POST);
+        $student = new Student($db, $_POST);
+        
+        // check that start date was default and if so set to current date
+        $default_date = date("Y") . "-1-1";  // XXXX-1-1
+        		
+        if ( $_POST['DOB'] == $default_date )  // DOB has not been changed in the form
+        {
+        	echo 'error|DOB of visitor must be entered';  // echo an error message
+        	exit();                                       // and exit to prevent further output
+        }
+		        		
+        // Call execute bound query to insert attendee into db with a bound query
+        $success = $attendee->execute_bound_query();
+
+	// if query was successful then proceed to get the ID and insert student
+	if ( $success )
+    	{
+        	// set ID of student from Attendee and insert student
+       		// using the ID
+       		$id = $db->insert_id;
+       		$success = $student->set_id_value($id);
+        			
+       		// check that student's ID was set with no errors
+        	if ( $success ) 
+        	{
+        		$success = $student->execute_bound_query();  // execute the query
+        				
+        		// check that query was successful and student was entered
+       			if ( $success ) 
+       			{
+       				// Now, add the visitor to the team of the person who brought them
+       				// But, first check that the visitor is not already added to the team
+       				$query = 'SELECT ID FROM teamlist WHERE AttendeeID = ' . $id . ';';
+       				if ( !$result = $db->query($query) )
+       				{
+       					if ( $result->num_rows == 0 )  // the visitor is not already added to the team so add them
+       					{
+       						$q = 'INSERT INTO teamlist (TeamID, AttendeeID) VALUES (' . $_POST['teamId'] . ', ' . $id . ');';
+       						
+       						if ( !$db->query($q) )
+       						{
+       							// if the student was not entered into the db, print an error
+       							echo 'error|Visitor could not be added to the team.  Please try again.';
+       							exit();  // exit since an error
+       						}
+       					}
+       				}
+       				
+       				// If successful, output: ID|FirstName|LastName|[NickName]|add
+       				// first check for nickname
+       				if ( $_POST['NickName'] )
+       					printf('%d|%s|%s|%s|add', $id, $_POST['FirstName'], $_POST['LastName'], $_POST['NickName']);
+       				else
+       					printf('%d|%s|%s|add', $id, $_POST['FirstName'], $_POST['LastName']);
+       				
+       				exit();  // exit so no further output is written
+       			}
+       			else
+       				$error = 'Could not insert student';
+       		}
+       		else
+       			$error = 'Could not set student id' . $db->insert_id;
+        }
+        else
+        	$error = $a->get_error_message();   // if the query was not successful then get the error message generated by the Attendee class
+        
+        // if the ID and name was not output and the script exit, then output an error message
+        printf('error|%s', $error);
+?>

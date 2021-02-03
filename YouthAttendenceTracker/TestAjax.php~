@@ -1,0 +1,6 @@
+<?php
+
+	$stuff = $_POST['info'];
+	
+	echo strlen($stuff);
+?>

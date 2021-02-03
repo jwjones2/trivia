@@ -1,0 +1,35 @@
+<html>
+	<head>
+		<title>Attendence Tracker Homepage</title>
+		
+		<!--favicon icon-->
+		<link rel="shortcut icon" href="./favicon.ico" />
+   
+		<!-- Metadata Section:  Description of Page and Keywords for Site. -->
+		<meta name="description" content="" />
+		<meta name="keywords" content="" />
+		
+		<!-- Link to Stylesheet -->
+		<link rel="stylesheet" href="./main.css" type="text/css" />
+		
+		<!-- Link to Javascript code for page -->
+		<script type="text/javascript" language="Javascript" src="./main.js"> </script>
+		
+		<script type="text/javascript" language="Javascript">
+		
+		</script>
+		
+		<style type="text/css">
+	        	
+		</style>
+	</head>
+	
+	<body>
+		<div class="menu">
+			<a href="./AddAttendee.php">New Student</a>  |  
+			<a href="./AttendeeGridView.php">Students List</a>  |  
+			<a href="./NewTeam.php">New Team</a>  | 
+			<a href="./TeamList.php">Teams List</a>
+		</div>
+	</body>
+</html>

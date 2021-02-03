@@ -1,0 +1,96 @@
+/*******************************************************************************
+ * AJAX.js
+ *
+ * Description:  This Javascript file contains the basic setup for creating
+ *	the XMLHttpRequest object for developing AJAX-powered pages.  It performs
+ *	browser sniffing and then creates the object.
+ *
+ * This code was copied from Beginning Ajax with PHP by Lee Babin, page 21.
+ *******************************************************************************/
+// create a bool var to check for valid IE instance
+var xmlhttp = false;
+
+// First, check for IE
+try
+{
+	// If Javascript version > 5
+	xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+}
+catch ( e )
+{
+	// If not, then use the older active X object
+	try
+	{
+		xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	catch ( e )
+	{
+		// Else, must be non-IE
+		xmlhttp = false;
+	}
+}
+
+// if non-IE, create a Javascript instance of the object
+if ( !xmlhttp && typeof XMLHttpRequest != 'undefined' ) 
+{
+	xmlhttp = new XMLHttpRequest();
+}
+
+// Function for return
+xmlhttp.onreadystatechange=function()
+{	
+	if (xmlhttp.readyState==4 && xmlhttp.status==200)
+	{
+		// First split the return string by '|'
+		var ret = xmlhttp.responseText.split('|');
+		
+		// First check that there was not an error, if so alert and return
+		if ( ret[0] == 'error' )
+		{
+			alert(ret[1]);
+			return;
+		}
+		
+		/***************************************************************
+		 * PROCESS THE AJAX RESPONSE
+		 *
+		 * If ret[0] == 'error', then alert the error and return.
+		 * Else, check for nickname (ret[3]) and print the visitor's name in
+		 * 	the Visitor signup sheet section of the student that brought them
+		 * 	and then call addVisitorRow passing the correct location to add the
+		 * 	row; location derived from visitorAddId.
+		 **************************************************************/
+		var visitorNameLocation = document.getElementById('Visitor_' + visitorAddId);    // location to write visitor's name in page
+		var visitorRowLocation = document.getElementById('VisitorAdd_' + visitorAddId);  // location in page to add visitor row
+		
+		// create a break tag to use in adding visitor
+		var br = document.createElement("br");
+		
+		if ( visitorAddId != 0 )  // if visitorAddId is zero then the visitor was added for the team and not a particular student
+		{
+			// Check for nickname and write the name to the page
+			if ( ret[3] != 'add' && ret[3] != 'noadd' )  // no NickName since  
+			{
+				// first create text node with name in it, then append to div where visitor name is written
+				var visitorName = document.createTextNode(ret[1] + ' "' + ret[3] + '" ' + ret[2]); 
+				visitorNameLocation.appendChild(visitorName);
+				// add a break
+				visitorNameLocation.appendChild(br);
+			}
+			else
+			{
+				// first create text node with name in it, then append to span where visitor name is written
+				var visitorName = document.createTextNode(ret[1] + ' ' + ret[2]); 
+				visitorNameLocation.appendChild(visitorName);
+				// add a break
+				visitorNameLocation.appendChild(br);
+			}
+		}
+		
+		// Add the visitor row by calling addVisitorRow if ret[3] || ret[4] == 'add'
+		if ( ret[3] == 'add' || ret[4] == 'add' )  // have to check 3 and then 4 because of number of elements passed back by php script
+			addVisitorRow(ret, visitorRowLocation);
+	}
+}
+
+

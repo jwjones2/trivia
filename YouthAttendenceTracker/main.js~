@@ -1,0 +1,332 @@
+function validateAttendeeForm() {
+    // Checks all of the form fields for the NewAttendee form to verify that the correct
+    // format of data has been entered.
+
+    // first name cannont be blank and must be a string
+    if (!checkForBlank("firstName", "First Name"))
+        return false;
+        
+    if (!checkForString("firstName", "First Name"))
+        return false;
+
+    // last name cannont be blank and must be a string
+    if (!checkForBlank("lastName", "Last Name"))
+        return false;
+
+    if (!checkForString("lastName", "Last Name"))
+        return false;
+
+    // Date of birth must not be blank and must be a valid date
+    if (!checkForBlank("dob", "Date of Birth"))
+        return false;
+
+    if (!checkForDate("dob", "Date of Birth"))
+        return false;
+
+    // Home phone must be a valid phone number, if it is not blank
+    if (validateBlank(document.getElementById("homePhone").value) && !checkForPhone("homePhone", "Home Phone"))
+        return false;
+        
+    // Cell phone must be a valid phone number, if it is not blank
+    if (validateBlank(document.getElementById("cellPhone").value) && !checkForPhone("cellPhone", "Cell Phone"))
+        return false;
+
+    // Check that email is valid, if it is not blank
+    if (validateBlank(document.getElementById("email").value) && !checkForEmail("email", "Email"))
+        return false;
+              
+    
+    // if all tests passed return true so form can submit
+    return true;
+}
+
+function validateTeamForm() {
+    // Checks the form fields for the New Team form
+    if ( !checkForBlank('Name', 'Team Name') )
+    	    return false;
+    
+    return true;
+}
+
+// checks for empty string, alerts user, and returns boolean
+function checkForBlank(id, name) {
+    var val = document.getElementById(id).value;  // get value from DOM
+    if (!validateBlank(val)) {  // use validateBlank to test for empty string
+        alert("Error:  " + name + " cannot be blank.");  // alert user to error
+        return false;   // return valid 
+    }
+    else {
+        return true;
+    }
+}
+
+// checks if value of id is a string, alerts user, and returns boolean
+function checkForString(id, name) {
+    var val = document.getElementById(id).value;  // get value from DOM
+    if (!validateString(val)) {  // use function to test value
+        alert("Error:  " + name + " must be a string.");  // alert user to error
+        return false;   // return valid 
+    }
+    else {
+        return true;
+    }
+}
+
+// checks if value of id is a valid date, alerts user, and returns boolean
+function checkForDate(id, name) {
+    var val = document.getElementById(id).value;  // get value from DOM
+    if (!validateDate(val)) {  // use function to test value
+        alert("Error:  " + name + " must be a date in format MM-DD-YYYY.");  // alert user to error
+        return false;   // return valid 
+    }
+    else {
+        return true;
+    }
+}
+
+// checks if value of id is a valid date, alerts user, and returns boolean
+function checkForDate(id, name) {
+    var val = document.getElementById(id).value;  // get value from DOM
+    if (!validateDate(val)) {  // use function to test value
+        alert("Error:  " + name + " must be a date in format MM-DD-YYYY.");  // alert user to error
+        return false;   // return valid 
+    }
+    else {
+        return true;
+    }
+}
+
+// checks if value of id is a valid phone number, alerts user, and returns boolean
+function checkForPhone(id, name) {
+    var val = document.getElementById(id).value;  // get value from DOM
+    if (!validatePhone(val)) {  // use function to test value
+        alert("Error:  " + name + " must be in format ###-###-####.");  // alert user to error
+        return false;   // return valid 
+    }
+    else {
+        return true;
+    }
+}
+
+// checks if value of id is a valid email, alerts user, and returns boolean
+function checkForEmail(id, name) {
+    var val = document.getElementById(id).value;  // get value from DOM
+    if (!validateEmail(val)) {  // use function to test value
+        alert("Error:  " + name + " is not valid.");  // alert user to error
+        return false;   // return valid 
+    }
+    else {
+        return true;
+    }
+}
+
+
+
+/*
+ * Validator functions
+ * Description:  Abstract the individual validation of empty string (blank), email, date, etc
+ *      from the main functions that the form returns.
+ * Input variables:  the value of the document element being validated
+ * Return variables:  boolean
+ */
+ 
+ // validate empty string
+function validateBlank(value) {
+    if (value == "")
+        return false;
+    else
+        return true;   
+}
+
+// validate phone number:  ###-###-####
+function validatePhone(value) {
+    var phoneRegEx = /^\d{3}-\d{3}-\d{4}$/;
+    return phoneRegEx.test(value);
+}
+
+// validate that value is a digit
+function validateDigit(value) {
+    var digitRegEx = /^\d+$/;
+    return digitRegEx.test(value);
+}
+
+// validate that value is a string
+function validateString(value) {
+    var stringRegEx = /^[a-zA-Z]+$/;  // match a-z or A-Z (all letters lower or upper case) one or more times
+    return stringRegEx.test(value);
+}
+
+// validate email address
+function validateEmail(value) {
+    var emailRegEx = /^[a-zA-Z0-9\._]+@[a-zA-Z1-9\._]+\.[a-zA-Z]{2,4}$/;
+    return emailRegEx.test(value);
+}
+
+// validate date in format MM-DD-YYYY
+function validateDate(value) {
+    var dateRegEx = /^(0[1-9]|1[012])[- \.](0[1-9]|[12][0-9]|3[01])[- \.](19|20)\d\d$/;  // used from http://www.regular-expressions.info/dates.html
+    return dateRegEx.test(value);
+}
+
+// function verifyDelete
+// 
+// Returns true or false from a prompt to verify the user
+// wants to follow through with the action of the submitted form.
+function verifyDelete ()
+{
+	return confirm('Are you sure you want to remove the team member?');	
+}
+
+var fieldsEnabled = new Array();
+
+// function enableFields
+// 
+// Checks a global variable stored in fieldsEnabled array for each
+// start_id input, to see if the signup fields after "Here" are enabled or not.
+// If start_id hasn't been added, then add and set to false at start.
+// They must be disabled if "Here" checkbox is not checked
+// or enabled if it is checked.  The function simply toggles 
+// the fields disabled or not by incrementing the starting id
+// and disabling or enabling the next 5 ids (such as 1, 2, 3, 4, 5)
+// following the number represented by the starting id.
+//
+// Input variables:  The starting id of the fields
+//
+// Return:  n/a
+function enableFields ( start_id )
+{	
+	// check that start_id has been checked and is in fieldsEnabled array or add as false
+	if ( !fieldsEnabled[start_id] ) // doesn't exist
+		fieldsEnabled[start_id] = false;
+	
+	if ( fieldsEnabled[start_id]  ) // fields are enabled so disable them
+	{
+		for ( var i = start_id + 1; i <= start_id + 5; i++ )
+		{
+			// set the fields to disabled and clear the values so 
+			// that no previously selected values are still checked
+			document.getElementById(i).disabled="disabled";
+			document.getElementById(i).checked="";
+		}
+		
+		// set the hidden box with the id of input id + 5 back to zero selection
+		document.getElementById(start_id + 5).value = 0;
+		
+		// disable the Visitor button using its id based on start_id:  Visitor_(start_id + 5)_button
+		document.getElementById("Visitor_" + (start_id+5) + "_button").disabled="disabled";
+		
+		fieldsEnabled[start_id] = false;
+	}
+	else
+	{
+		for ( var i = start_id + 1; i <= start_id + 5; i++ )
+		{
+			document.getElementById(i).disabled="";
+		}
+		
+		// enable the Visitor button using its id based on start_id:  Visitor_(start_id + 5)_button
+		document.getElementById("Visitor_" + (start_id+5) + "_button").disabled="";
+		
+		fieldsEnabled[start_id] = true;
+	}
+}
+
+var visitorAddId;   // the global variable set by showAddVisitor and used by the AJAX response to add a visitor to the SignUp page
+
+/*******************************************************************************
+ * Function showAddVisitor
+ *
+ * Description: 
+ *
+ * Input Variables: n/a
+ *
+ * Returns: n/a
+ ******************************************************************************/
+function showAddVisitor ( addId, teamId )
+{
+	visitorAddId = addId;  // set global variable for use in adding visitor to page by AJAX response
+	teamIdAdd = teamId;    // set global variable for use with addVisitorAjax
+	
+	// get reference to the divs to change transparency
+	var div1 = document.getElementById('popup');
+	
+	div1.style.display = "block";
+	
+	if ( navigator.appName == "Microsoft Internet Explorer" )
+	{
+		div1.style.top = document.documentElement.scrollTop;
+		div1.style.left = document.documentElement.scrollLeft;
+	}
+	else
+	{
+		div1.style.top = window.scrollY + "px";
+		div1.style.left = window.scrollX + "px";
+	}
+}
+
+/*******************************************************************************
+ * Function hideAddVisitor
+ *
+ * Description: 
+ *
+ * Input Variables: n/a
+ *
+ * Returns: n/a
+ ******************************************************************************/
+function hideAddVisitor ()
+{
+	// get reference to the divs to change transparency
+	var div1 = document.getElementById('popup');
+	
+	div1.style.display = "none";
+}
+
+/*******************************************************************************
+ * Function customDate
+ *
+ * Description: Sets the date value of form for submitting service signups.
+ *
+ * Input Variables: n/a
+ *
+ * Returns: n/a
+ ******************************************************************************/
+function customDate ()
+{
+	// variables for function
+	var month = -1;                // to hold month
+	var days = -1;                 // to hold days
+	var year = -1;                 // to hold year
+	var isDigit = /^[0-9]+$/;      // regex to validate is an integer
+	var d = new Date();            // date object
+	var currentYear = d.getFullYear(); // to get the current year to validate year
+	// month names for displaying to user
+	var m_names = new Array("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December");
+	
+	// prompt for month, validating range and if it is an integer	
+	while ( month < 1 || month > 12 || !isDigit.test(month) )
+	{
+		month = prompt('Please enter a month (01 - 12):');
+	}
+	
+	// prompt for days, validating range and if it is an integer	
+	while ( days < 1 || days > 31 || !isDigit.test(days) )
+	{
+		days = prompt('Please enter a day (01 - 31):');
+	}
+	
+	// prompt for year, validating range and if it is an integer	
+	while ( year < 1990 || year > currentYear || !isDigit.test(year) )
+	{
+		year = prompt('Please enter a year (1990 - ' + currentYear + '):');
+	}
+	
+	// create two date formats, one for displaying on form to user and the other for the form to submit
+	var displayDate = m_names[month-1] + ' ' + days + ', ' + year;
+	var formDate = year + '-' + month + '-' + days;
+	
+	// write the display date to the page
+	document.getElementById('displayDate').innerHTML = displayDate;
+	
+	// write the form date to the form's hiddent field 'Date'
+	document.getElementById('Date').value = formDate;
+}

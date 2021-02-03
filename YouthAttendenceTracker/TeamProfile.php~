@@ -1,0 +1,213 @@
+<?php
+	/********************************************************
+	 * TeamProfile.php
+	 *
+	 * Description:  The profile of a team in the Attendence
+	 *	Tracker db.  Name, Start Date, Notes, and list of
+	 *	team members.  Controls to remove member or pick
+	 *	more members and to make the team no longer active.
+	 ********************************************************/
+
+	 
+	/********************************************************
+	 * Database Connection section.
+	 ********************************************************/
+	// Connect to the db; use MYSQL_helper.php for mysql login
+	require_once('MYSQL_helper.php');
+	$db = db_connect( );
+
+	// set the error variable to hold db errors; set to empty string
+	$error = "";	
+	
+	// Check that connection was successful and set $error if not
+	if ( $db->connect_error ) {
+		$error = "There was a problem connecting to the database.";
+	}
+	
+	/*** INCLUDE SECTION for helper classes  ***/
+	require_once('DBTable.php');       // the DBTable superclass
+	require_once('Table_helper.php');  // the sub classes of DBTable to handle db table interactions
+	require_once('HTML_helper.php');   // functions for handling HTML output and manipulation	
+?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+        <title>Team Profile</title>
+        
+        <!--favicon icon-->
+        <link rel="shortcut icon" href="./favicon.ico" />
+   
+        <!-- Metadata Section:  Description of Page and Keywords for Site. -->
+        <meta name="description" content="" />
+        <meta name="keywords" content="" />
+   
+        <!-- Link to Stylesheet -->
+        <link rel="stylesheet" href="./main.css" type="text/css" />
+        
+        <!-- Link to Javascript code for page -->
+        <script type="text/javascript" language="Javascript" src="./main.js"> </script>
+        
+        <script type="text/javascript" language="Javascript">
+
+        </script>
+        
+        <style type="text/css">
+        	
+        </style>
+        
+    </head>
+    
+    <body class="formBody">
+    	<?php
+    		/* OUTPUT THE SITE'S MENU */
+    		write_menu();
+    		
+    		/* OUTPUT ANY ERRORS */
+    		if ( $error != "" )
+    			printf('<div style="color: red; font-size: 22px;">%s</div>', $error);
+    	?>
+    	
+    	<?php
+    		/***************************************************************
+    		 * php functionality
+    		 *
+    		 * 1. First, Check that the _submit_check field isset and if so delete
+    		 *    the member from the TeamList table that is specified by the
+    		 *    memberToRemove field submitted.
+    		 * 2. Query the db and get the team info for the GET ID that was
+    		 *    input.
+    		 * 3. Display the team info.
+    		 * 4. Page is self-submitting for removing team members and making
+    		 *    the team inactive.
+    		 **************************************************************/
+    		/*  
+    		    (1) Check for _submit_check; if isset then a member is to be deleted
+    		    from the team
+    		 */
+    		if ( isset($_POST['_submit_check']) )
+    		{
+    			// build the DELETE query
+    			$query = 'DELETE FROM teamlist WHERE AttendeeID=' . $_POST['memberToRemove'] . ';';
+    			
+    			// run the query
+    			$db->query($query);
+    			   			
+    			// set the GET variable for team ID
+    			$_GET['TeamID'] = $_POST['TeamID'];
+    		}
+    			
+    	
+    		/*  (2) Query the Attendence Tracker DB to get team info  */
+    		if ( !isset($_GET['TeamID']) ) 
+    			echo 'Error:  Cannot find the team id... <a href="./TeamList.php">Go Back to Teams List</a><br />';
+    		
+    		// array to hold team data
+    		$team = array();
+    		
+    		$query = 'SELECT * FROM team WHERE ID=' . $_GET['TeamID'] . ';';  // build the query string
+    		
+    		// query the db and test result
+    		if ( $result = $db->query($query) ) 
+    		{
+    			while ( $obj = $result->fetch_object() ) 
+    			{
+    				// get team data and store in team array
+    				$team['Name'] = $obj->Name;
+    				$team['Start'] = $obj->Start;
+    				$team['ID'] = $obj->ID;
+    				$team['Notes'] = $obj->Notes;
+    				$team['End'] = $obj->End;
+    			}
+    		}
+    		
+    	?>
+    	
+    	<div class="teamTitleSection">
+    		<span class="teamTitle">Team "<?php echo $team['Name']; ?>"</span> <br />
+    		<?php echo $team['Start']; ?>
+    			<br />
+		<span style="background-color: yellow; font-family: Sans-Serif;">
+			<?php
+				require_once('DBMiscClasses.php');
+		
+				$tPoints = new TeamPoints($db, $team['ID']);
+				printf('Team points:  %s<br /><br />', number_format( $tPoints->get_points() ) );
+			?>
+		</span>
+    	</div>
+    	
+    	<div class="teamMemberList">
+    		<?php
+    			/*  Query the teamlist and attendee tables and get the members for the team */
+    			// arrays to hold the team member results
+    			$member_ids = array();
+    			$member_names = array();
+    		 
+    			$query = 'SELECT AttendeeID FROM teamlist WHERE TeamID=' . $_GET['TeamID'] . ';';  // build the query string
+   
+    			if ( $result = $db->query($query ) ) // query the db and test result object
+    			{
+    				// loop while there are still rows to process
+    				while ( $obj = $result->fetch_object() )   // use fetch_object to get result as an object to be able to reference by column name
+    				{
+    					$member_ids[] = $obj->AttendeeID; 
+    				}
+    			}
+    			/*  Now process the IDs to get the member names and assign to member_names array */
+    			
+    			echo '<table class="teamProfileTable">';  // start a table to hold members
+    			
+    			// counter for styling every other row
+    	  		$counter = 0;
+    			
+    	  		// loop over member_ids and query attendee db using id to get member name
+    			foreach ( $member_ids as $mid ) 
+    			{
+    				$query = "SELECT ID, PictureURL, FirstName, LastName, DOB, Sex FROM attendee WHERE ID=" . $mid . ";";    // construct the query
+    	  			if ( $result = $db->query($query) )  // query the db and get the result object (mysqli_result)
+    	  			{  
+    	  				while ( $data = $result->fetch_object() ) 
+    	  				{  // get row as object
+    	  					if ( $counter % 2 == 0 ) // even row
+    	  						echo '<tr class="even">'; 			              
+    	  					else
+    	  						echo '<tr>';
+    	  					// check if picture is null and print alternative if so 
+    	  					if ( $data->PictureURL == 'NULL' )
+    	  					{
+    	  						if ( $data->Sex == 'female' ) 
+    	  							echo '<td><img src="./profile_pictures/Girl.gif" id="picture" /></td>';
+    	  						else
+    	  							echo '<td><img src="./profile_pictures/Boy.gif" id="picture" /></td>';
+    	  					}
+    	  					else
+    	  						printf('<td><img src="./%s" id="picture" /></td>', $data->PictureURL);       // Put the picture at start of record
+    	  						printf('<td>%s %s</td>', $data->FirstName, $data->LastName);                 // Print the full name:  FirstName LastName
+    	  						printf('<td>%s</td>', $data->DOB);				             // Print the DOB
+    	  						printf('<form name="ViewProfile" method="POST" action="./ViewProfile.php"><input type="hidden" name="ID" value="%s" />', $data->ID); // set up form to submit the ID to ViewProfile when button is clicked
+    	  						echo '<td><input name="submit" type="submit" value="View Profile" /></td></form>';  // print the view profile button
+    	  						printf('<td><form action="%s" method="POST" name="removeMemberForm" onsubmit="return verifyDelete()"><input type="hidden" name="_submit_check" value="y" />', $_SERVER['PHP_SELF']);
+    	  						printf('<input type="hidden" name="memberToRemove" value="%s" /><input type="hidden" name="TeamID" value="%s" /><input type="submit" class="redButton" value="Remove Team Member" /></form></td>', $data->ID, $_GET['TeamID']);  							     
+    	  					
+    	  					$counter++;  // increment the counter
+    	  				}
+    	  			}
+    		 		
+    		 	}
+    		 	echo '</table>';  // end the table
+    		?>
+    		
+    		<div class="teamProfilePickMembers">
+			<a href="./PickTeamMembers.php?ID=<?php echo $team['ID']; ?>"><input type="button" value="Add Team Members" /></a>
+		</div>	
+    	</div>   
+
+		
+	<!-- HOME LOGO SECTION -->
+        <div class="homeLogoButton"><a href="./home.php"><img src="./site_images/Homelogo.gif" style="width: 200px; height: 400px;" /></a></div>
+    	
+    </body>
+</html>
+    	

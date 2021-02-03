@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8">
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+        <title></title>
+        
+        <!--favicon icon-->
+        <link rel="shortcut icon" href="./favicon.ico" />
+   
+        <!-- Metadata Section:  Description of Page and Keywords for Site. -->
+        <meta name="description" content="" />
+        <meta name="keywords" content="" />
+   
+        <!-- Link to Stylesheet -->
+        <link rel="stylesheet" href="./main.css" type="text/css" />
+        
+        <!-- Link to Javascript code for page -->
+        <script type="text/javascript" language="javascript" src="./main.js"> </script>
+        
+    </head>
+    
+    <body>
+
+        
+    </body>
+</html>

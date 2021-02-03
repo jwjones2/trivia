@@ -1,0 +1,117 @@
+<?php
+	/********************************************************
+	 * Database Connection section.
+	 ********************************************************/
+	// Connect to the db; use MYSQL_helper.php for mysql login
+	require_once('MYSQL_helper.php');
+	$db = db_connect( );
+
+	// set the error variable to hold db errors; set to empty string
+	$error = "";	
+	
+	// Check that connection was successful and set $error if not
+	if ( $db->connect_error ) {
+		$error = "There was a problem connecting to the database.";
+	}
+?>
+
+<html>
+	<head>
+		<title>Team List</title>
+		
+		<!--favicon icon-->
+		<link rel="shortcut icon" href="./favicon.ico" />
+   
+		<!-- Metadata Section:  Description of Page and Keywords for Site. -->
+		<meta name="description" content="" />
+		<meta name="keywords" content="" />
+		
+		<!-- Link to Stylesheet -->
+		<link rel="stylesheet" href="./main.css" type="text/css" />
+		
+		<!-- Link to Javascript code for page -->
+		<script type="text/javascript" language="javascript" src="./main.js"> </script>
+		
+		<style type="text/css">
+			table
+			{
+				width: 600px;
+				position: relative;
+				top: 20px;
+			}
+			img
+			{
+				width: 50px;
+				height: 50px;
+			}
+			td
+			{
+				font-size: 16px;
+				font-family: Georgia;
+				font-style: italic;
+				text-shadow: Gray 3px 3px 5pxs;
+			}
+			.even
+			{
+				background-color: #dddddd;
+				border-top: 1px solid Black;
+				border-bottom: 1px solid Black;
+			}
+		</style>
+	</head>
+		
+	<body>
+		<!-- MENU SECTION -->
+		<?php
+			require_once('HTML_helper.php');
+			write_menu();
+		?>
+
+		<table>
+			<tr>
+				<th align="left">Name</th>
+				<th align="left">Start Date</th>
+			</tr>
+			<?php          
+				/**
+					Check activeteam table first and use the retrieved values to get
+					teams from team table
+				 **/
+				$query = "SELECT TeamID FROM activeteam";    // construct the query
+    	  			if ( $result = $db->query($query) )  // query the db and get the result object (mysqli_result)
+    	  			{  
+    	  				// counter for styling every other row
+    	  				$counter = 0;
+    	  				while ( $data = $result->fetch_object() ) // get row as object
+    	  				{  
+    	  					// Now, query the team table to get the team info
+    	  					$q = 'SELECT ID, Name, Start FROM team WHERE ID=' . $data->TeamID . ';';
+    	  					
+    	  					if ( $res = $db->query($q) ) 
+    	  					{
+    	  						while ( $dat = $res->fetch_object() )
+    	  						{
+    	  							if ( $counter % 2 == 0 ) // even row
+    	  								echo '<tr class="even">'; 			              
+    	  							else
+    	  								echo '<tr>';
+    	  							
+    	  							printf('<td>%s</td>', $dat->Name);                 // Print the team name
+    	  							printf('<td>%s</td>', $dat->Start);	   // Print the StartDate
+    	  							printf('<form name="ViewProfile" method="GET" action="./TeamProfile.php"><input type="hidden" name="TeamID" value="%s" />', $dat->ID); // set up form to submit the ID to TeamProfile when button is clicked
+    	  							echo '<td><input name="submit" type="submit" value="View Team Profile" /></td>';  // print the view profile button
+    	  						}
+    	  					}
+    	  					echo '</form></tr>';  							     // end the row and the form
+    	  					
+    	  					$counter++;  // increment the counter
+    	  				}
+    	  			}
+		    	  ?>
+		</table>
+		
+	<!-- HOME LOGO SECTION -->
+        <div class="homeLogoButton"><a href="./home.php"><img src="./site_images/Homelogo.gif" style="width: 200px; height: 400px;" /></a></div>
+        
+	</body>
+</html>

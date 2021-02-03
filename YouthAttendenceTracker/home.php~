@@ -1,0 +1,43 @@
+<html>
+	<head>
+		<title>Attendence Tracker Homepage</title>
+		
+		<!--favicon icon-->
+		<link rel="shortcut icon" href="./favicon.ico" />
+   
+		<!-- Metadata Section:  Description of Page and Keywords for Site. -->
+		<meta name="description" content="" />
+		<meta name="keywords" content="" />
+		
+		<!-- Link to Stylesheet -->
+		<link rel="stylesheet" href="./main.css" type="text/css" />
+		
+		<!-- Link to Javascript code for page -->
+		<script type="text/javascript" language="Javascript" src="./main.js"> </script>
+		
+		<script type="text/javascript" language="Javascript">
+		
+		</script>
+		
+		<style type="text/css">
+	        	
+		</style>
+	</head>
+	
+	<body class="homeBody">
+		<?php
+			require_once('HTML_helper.php');
+			write_menu();
+		?>
+		
+		<div class="topLayer"> 
+			<img src="./site_images/YATlogo.gif" class="homeLogo" />
+			
+			<iframe src="./ReleaseFormList.php" width="20%" height="100%" class="leftFrame">
+				<p>Your browser does not support iframes.</p>
+			</iframe>
+		
+		</div>
+		
+	</body>
+</html>

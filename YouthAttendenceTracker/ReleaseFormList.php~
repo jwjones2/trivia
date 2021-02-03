@@ -1,0 +1,85 @@
+<?php
+	/********************************************************
+	 * Database Connection section.
+	 ********************************************************/
+	// Connect to the db; use MYSQL_helper.php for mysql login
+	require_once('MYSQL_helper.php');
+	$db = db_connect( );
+
+	// set the error variable to hold db errors; set to empty string
+	$error = "";	
+	
+	// Check that connection was successful and set $error if not
+	if ( $db->connect_error ) {
+		$error = "There was a problem connecting to the database.";
+	}
+?>
+
+<html>
+	<head>
+		<title>Release Form List</title>
+		
+		<!--favicon icon-->
+		<link rel="shortcut icon" href="./favicon.ico" />
+   
+		<!-- Metadata Section:  Description of Page and Keywords for Site. -->
+		<meta name="description" content="" />
+		<meta name="keywords" content="" />
+		
+		<!-- Link to Stylesheet -->
+		<link rel="stylesheet" href="./main.css" type="text/css" />
+		
+		<!-- Link to Javascript code for page -->
+		<script type="text/javascript" language="javascript" src="./main.js"> </script>
+		
+		<style type="text/css">
+			img
+			{
+				width: 50px;
+				height: 50px;
+			}
+			td
+			{
+				font-size: 16px;
+				font-family: Georgia;
+				font-style: italic;
+				text-shadow: Gray 3px 3px 5px;
+			}
+		</style>
+	</head>
+		
+	<body>
+
+		<table>
+			<tr>
+				<th align="center">Students With Current Release Forms</th>
+			</tr>
+			<?php          
+				/**
+					Get the rows from Attendee.
+				 **/
+				$query = "SELECT FirstName, LastName, ReleaseFormUpdate FROM attendee WHERE Active='yes' ORDER BY LastName";    // construct the query
+    	  			if ( $result = $db->query($query) )  // query the db and get the result object (mysqli_result)
+    	  			{  
+    	  				while ( $data = $result->fetch_object() ) 
+    	  				{  // get row as object
+    	  					// first split the date from ReleaseFormUpdate into Year, Month, Day (separated by '-')
+    	  					$date = explode('-', $data->ReleaseFormUpdate);
+    	  					
+    	  					// Check that the year is the current year; use date to get the year
+    	  					$year = date('Y');
+    	  					
+    	  					if ( $date[0] == $year )  // does ReleaseFormUpdate year equal the current year?
+    	  					{                         // if so print the student name
+    	  						echo '<tr>';  // start the row
+    	  					
+    	  						printf('<td class="center">%s %s</td>', $data->FirstName, $data->LastName);    // Print the full name:  FirstName LastName
+    	  					
+    	  						echo '</tr>'; // end the row
+    	  					}
+    	  				}
+    	  			}
+		    	  ?>
+		</table>
+	</body>
+</html>

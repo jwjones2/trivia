@@ -1,0 +1,225 @@
+<?php
+	/*************************************************
+	 * db_connect function 
+	 * 
+	 * Description:  Connects to a database and returns the db object.
+	 *
+	 * Input variables: n/a
+	 *
+	 * Return variables:  database connection referece object
+	 *************************************************/
+	function db_connect ( )
+	{
+		// First connect to DB and check for connection errors
+		$db_object = new mysqli('127.0.0.1', 'root', '', 'attendencetracker');
+		
+		return $db_object;
+	}
+	
+	
+	/*************************************************
+	 * clean_form_elements_for_db function
+	 *
+	 * Description:  takes an array, usually the $_POST or $_GET
+	 * 	global array, and a reference to a database object
+	 * 	and populates a new array that it returns
+	 *	with all of the input array's elements escaped and set
+	 * 	to NULL if empty.
+	 * 
+	 * Input varables:  an array, and database reference object 
+	 *
+	 * Return variables:  an array
+	 ************************************************/
+	function clean_form_elements_for_db ( $db, $elements ) 
+	{
+		// first get the keys, the form elements' names,
+		// and store in an array for use in new array
+		$keys = array_keys($elements);
+		
+		// create new array to return
+		$a = array();
+	
+		// loop over $elements, cleaning and assigning
+		// each form element to the new array
+		for ( $i = 0; $i < count($elements); $i++ )
+		{
+			// first, test if element is empty
+			if ( $elements[$keys[$i]] == "" )
+				$elements[$keys[$i]] = 'NULL';  // set to NULL if empty
+			
+			// assign new escaped value to new array; use real_escape_string
+			// to escape the form element
+			$a[$keys[$i]] = $db->real_escape_string($elements[$keys[$i]]);  
+		}
+		
+		// return the array
+		return $a;
+	}
+	
+	/*************************************************
+	 * build_date_from_form function
+	 *
+	 * Description:  takes three names of year, month, and day
+	 *	elements of a form stored in the input array and then
+	 *	condenses the elements into a proper Mysql date format
+	 *	(YYYY-MM-DD) and unsets the year, month, and day elements
+	 *	since they are no longer needed.  Returns the new date
+	 *	as a string.
+	 * 
+	 * Input varables:  an array (passed by reference), three strings
+	 *
+	 * Return variables:  new date as a string
+	 ************************************************/
+	function build_date_from_form ( &$elements, $y, $m, $d ) 
+	{
+		// form the year, month, and day elements into the proper Mysql db date format YYYY-MM-DD
+        	$new_date = $elements[$y] . "-" . $elements[$m] . "-" . $elements[$d];
+        	
+        	// return the new date as a string
+        	return $new_date;
+        }
+        
+        /***************************************
+    	 * function populate_form
+    	 *
+    	 * Description:  Checks that the form was submitted
+    	 *	by checking '_submit_check' is set in $_POST
+    	 *	and if so gets the input form name's value 
+    	 *	and writes it to page.
+         *
+         * Input variables:  string (field or form element name, corresponds to $_POST key)
+         *
+         * Return type:  outputs value as string
+         ***************************************/
+        function populate_form ( $field_name )
+        {
+        	// First, check that form was submitted
+        	if ( isset($_POST['_submit_check'] ) )
+        	{
+       			// assign value to variable and use htmlentities
+     			// to prepare for output to html (handles special characters)
+        		$form_value = htmlentities($_POST[$field_name]);
+        				
+        		// check that form value is not NULL or set to string 'NULL'
+        		// if so output an empty string:  empty strings are sometimes stored
+        		// in db as NULL or 'NULL'
+        		if ( $form_value == 'NULL' || $form_value == NULL )
+        			echo "";           // print out to page
+        		else 
+        			echo $form_value;  // print out to page
+        	}
+        }
+        
+        /********************************************
+         * function parse_error_message
+         *
+         * Description:  Takes an error message from
+         * 	DBTable object and returns a multi-dimentional
+         *	array with the parsed elements.
+         *
+         * Input variables:  string (error message)
+         *
+         * Return type: array
+         *******************************************/
+        function parse_error_message ( $error_message ) 
+	{
+		// First, split error message by ; which delineates
+		// each error message inside the while $error_message 
+		// variable
+		$a = explode(';', $error_message);
+        		
+		$b = array();  // final array to return
+        		
+		$i = 0;  // counter for loop
+		// iterate over messages splitting into two parts
+		// (field name and message) and assigning 
+		// to each element of $b
+		foreach ( $a as $val )
+		{
+			$b[$i] = explode(':', $val);
+			$i++; // increment the counter
+		}
+        		
+		return $b; // return multi-dimentional array
+	}
+	
+	function get_month_init_values ( $m, $d, $y )
+	{
+		$month = "not_set";
+		$day = "not_set";
+		$year = "not_set";
+		if ( isset($_POST['_submit_check'] ) )
+		{
+			$month = $_POST[$m];
+			$day = $_POST[$d];
+			$year = $_POST[$y];
+		}
+		
+		$arr = array($month, $day, $year);
+		
+		return $arr;
+	}
+	
+	function get_month_init_values_from_db ( $db, $col )
+	{
+		// default values to return if no date set in db
+		$month = "not_set";
+		$day = "not_set";
+		$year = "not_set";
+	
+		// check if the date is not NULL
+		if ( $db->retrieve_value($col) != 'NULL' ) 
+		{
+			// get date
+			$date = $db->retrieve_value($col);
+			
+			// split date into parts with explode
+			$date_elements = explode('-', $date);
+			
+			// assign values to variables
+			$month = $date_elements[1];
+			$day = $date_elements[2];
+			$year = $date_elements[0];
+		}
+		
+		
+		$arr = array($month, $day, $year);
+		
+		return $arr;
+	}
+	
+	function is_selected ( $id, $value )
+	{
+		// First, check that form was submitted
+        	if ( isset($_POST['_submit_check'] ) )
+        	{
+        		if ( isset($_POST[$id]) && $_POST[$id] == $value )
+        			printf('checked="checked"');
+        	}
+	}
+	
+	function is_selected_checkbox ( $id )
+	{
+		// First, check that form was submitted
+        	if ( isset($_POST['_submit_check'] ) )
+        	{
+        		if ( isset($_POST[$id]) && $_POST[$id] == "on" )
+        			printf('checked="checked"');
+        	}
+	}
+	
+	function select_box_check ( $id )
+	{
+		// First, check that form was submitted
+        	if ( isset($_POST['_submit_check'] ) )
+        	{
+        		//if ( isset($_POST[$id]) )
+        			printf('<option value="%s">%s</option>', $_POST[$id], strtoupper($_POST[$id]) );
+        	}
+	}
+	
+	function select_box_initiate_from_db ( $db, $col ) 
+	{
+		printf('<option value="%s">%s</option>', $db->retrieve_value($col), $db->retrieve_value($col) );
+	}
+?>

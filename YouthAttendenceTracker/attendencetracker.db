@@ -1,0 +1,212 @@
+-- MySQL dump 10.13  Distrib 5.1.37, for debian-linux-gnu (i486)
+--
+-- Host: localhost    Database: attendencetracker
+-- ------------------------------------------------------
+-- Server version	5.1.37-1ubuntu5.1
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `Attendee`
+--
+
+DROP TABLE IF EXISTS `Attendee`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `Attendee` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
+  `FirstName` varchar(30) NOT NULL,
+  `LastName` varchar(30) NOT NULL,
+  `MiddleName` varchar(30) DEFAULT NULL,
+  `NickName` varchar(30) DEFAULT NULL,
+  `StreetAddress` varchar(75) DEFAULT NULL,
+  `Zip` varchar(5) DEFAULT NULL,
+  `HomePhone` varchar(12) DEFAULT NULL,
+  `CellPhone` varchar(12) DEFAULT NULL,
+  `CanReceiveTxt` enum('yes','no') DEFAULT NULL,
+  `Facebook` enum('yes','no') DEFAULT NULL,
+  `Occupation` varchar(50) DEFAULT NULL,
+  `WorkPhone` varchar(12) DEFAULT NULL,
+  `PictureURL` varchar(30) DEFAULT NULL COMMENT 'URL of attendee''s picture',
+  `Email` varchar(50) DEFAULT NULL,
+  `FavoriteThings` text,
+  `PicturePolicy` enum('full','partial','no') DEFAULT NULL,
+  `ReleaseForm` enum('yes','no') DEFAULT NULL,
+  `ReleaseFormUpdate` date DEFAULT NULL,
+  `TShirtSize` enum('xs','s','m','l','xl','xxl') DEFAULT NULL,
+  `BroughtBy` varchar(75) DEFAULT NULL COMMENT 'Who brought them to youth',
+  `Sex` enum('male','female') NOT NULL,
+  `Ethnicity` varchar(50) DEFAULT NULL,
+  `DOB` date NOT NULL,
+  `SubDiscriminator` enum('student','sponsor','other') DEFAULT NULL COMMENT 'Sub Type Discriminator',
+  `DateSaved` date DEFAULT NULL,
+  `DateBaptized` date DEFAULT NULL,
+  `DateHolyGhost` date DEFAULT NULL COMMENT 'Date filled with the Holy Ghost',
+  `Notes` text,
+  `extra1` int(11) DEFAULT NULL,
+  `extra2` int(11) DEFAULT NULL,
+  `extra3` int(11) DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 COMMENT='This is the supertype for all attendees of youth';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `Attendee`
+--
+
+LOCK TABLES `Attendee` WRITE;
+/*!40000 ALTER TABLE `Attendee` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Attendee` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `Sponsor`
+--
+
+DROP TABLE IF EXISTS `Sponsor`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `Sponsor` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
+  `BackgroundCheck` enum('yes','no') DEFAULT NULL,
+  `VanEligible` enum('yes','no') DEFAULT NULL,
+  `MaritalStatus` enum('married','single','divorced','engaged') DEFAULT NULL,
+  `Anniversary` date DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `Sponsor`
+--
+
+LOCK TABLES `Sponsor` WRITE;
+/*!40000 ALTER TABLE `Sponsor` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Sponsor` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `Student`
+--
+
+DROP TABLE IF EXISTS `Student`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `Student` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
+  `OtherChurch` varchar(75) DEFAULT NULL COMMENT 'If the student attends another church as home church.',
+  `PreviousChurch` varchar(75) DEFAULT NULL COMMENT 'If the student attended a church prior to starting here.',
+  `SchoolName` varchar(50) DEFAULT NULL COMMENT 'School the student attends.',
+  `GraduationDate` date DEFAULT NULL COMMENT 'Date student is expected to graduate highschool.',
+  `StartDate` date DEFAULT NULL COMMENT 'Date student started to attend youth group.',
+  `LeaveDate` date DEFAULT NULL COMMENT 'Date student stopped attending youth group.',
+  `LeavenReason` text COMMENT 'Reason student stopped attending youth group.',
+  PRIMARY KEY (`ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `Student`
+--
+
+LOCK TABLES `Student` WRITE;
+/*!40000 ALTER TABLE `Student` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Student` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `Team`
+--
+
+DROP TABLE IF EXISTS `Team`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `Team` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
+  `Name` varchar(30) NOT NULL,
+  `Start` date NOT NULL COMMENT 'Date the team was created',
+  `End` date DEFAULT NULL,
+  `Notes` int(11) DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `Team`
+--
+
+LOCK TABLES `Team` WRITE;
+/*!40000 ALTER TABLE `Team` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Team` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `TeamList`
+--
+
+DROP TABLE IF EXISTS `TeamList`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `TeamList` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
+  `TeamID` int(11) NOT NULL COMMENT 'Foreign Key for Team instance.',
+  `AttendeeID` int(11) NOT NULL COMMENT 'Foreign Key for Attendee instance.',
+  `AttendeeRole` varchar(30) DEFAULT NULL COMMENT 'The role for the attendee on the team',
+  PRIMARY KEY (`ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `TeamList`
+--
+
+LOCK TABLES `TeamList` WRITE;
+/*!40000 ALTER TABLE `TeamList` DISABLE KEYS */;
+/*!40000 ALTER TABLE `TeamList` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `Zipcode`
+--
+
+DROP TABLE IF EXISTS `Zipcode`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `Zipcode` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
+  `Value` varchar(5) NOT NULL COMMENT 'The Zipcode.',
+  `City` varchar(30) NOT NULL,
+  `State` varchar(2) NOT NULL COMMENT 'Two character state abbreviation',
+  PRIMARY KEY (`ID`)
+) ENGINE=MyISAM AUTO_INCREMENT=17 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `Zipcode`
+--
+
+LOCK TABLES `Zipcode` WRITE;
+/*!40000 ALTER TABLE `Zipcode` DISABLE KEYS */;
+INSERT INTO `Zipcode` VALUES (1,'65202','Columbia','MO'),(2,'65201','Columbia','MO'),(3,'65203','Columbia','MO'),(4,'65205','Columbia','MO'),(5,'65211','Columbia','MO'),(6,'65212','Columbia','MO'),(7,'65215','Columbia','MO'),(8,'65216','Columbia','MO'),(9,'65217','Columbia','MO'),(10,'65218','Columbia','MO'),(11,'65233','Booneville','MO'),(12,'65240','Centrailia','MO'),(13,'65248','Fayette','MO'),(14,'65255','Hallsville','MO'),(15,'65256','Harrisburg','MO'),(16,'65010','Ashland','MO');
+/*!40000 ALTER TABLE `Zipcode` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2010-05-18 14:57:56

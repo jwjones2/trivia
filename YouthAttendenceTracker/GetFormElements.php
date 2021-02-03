@@ -1,0 +1,981 @@
+<html>
+<head><title></title>
+</head>
+
+<body>
+
+<?php
+	/************************************
+	 * Class DBTable
+	 *
+	 * Description:  An abstract class that defines a 
+	 * 	class for handling data from a table.  It provides
+	 *	member variables to hold structure and data about
+	 *	and from the table it corresponds to and provides member
+	 *	functions to get, manipulate, clean, and perform database
+	 *	operations on data retrieved from a form or a db table.
+	 *
+	 ************************************/
+	abstract class DBTable 
+	{
+		/************************************
+		 * Private member variables
+		 ************************************/
+		protected $fields;                // array to hold column names of table corresponding to form elements
+		protected $field_type;            // array to hold data type of corresponding fields to use in binding parameters 
+		protected $values;                // array to hold the values corresponding to the fields of the table
+		protected $valid_values = false;  // bool to test if all required values are correct 
+		protected $table_name;            // the name of the db table the data corresponds to 
+		protected $error_message;	  // an errors that occur are stored in this string
+		protected $db;			  // an object reference to a database object
+		
+		/**************************************
+		 * Constructor
+		 *
+		 * Description:  Takes two arguments to set the 
+		 *	db object reference and the name of the table
+		 *	the object corresponds to in the db.
+		 *
+		 * Input variables:  db object, string name of table
+		 *
+		 * Return type:  n/a
+		 **************************************/
+		function __construct ( $db, $name ) 
+		{
+			// assign db object reference and table name to member variables
+			$this->db = $db;
+			$this->table_name = $name;
+		}
+		
+		/**************************************
+		 * function get_field
+		 *
+		 * Description:  Returns the field corresponding
+		 *	to the integer input.  Provides bounds checking.
+		 *
+		 * Input variables:  int
+		 *
+		 * Return type:  string (the field)
+		 **************************************/
+		public function get_field ( $counter )
+		{
+			// check that counter is not out-of-bounds:  less than 0
+			// or more than the number of fields 
+			if ( $counter < 0 || $counter >= count($this->fields) )
+				return NULL;  // if out-of-bounds, return NULL
+			
+			// return the field
+			return $this->fields[$counter];
+		}
+		
+		/**************************************
+		 * function get_field_type
+		 *
+		 * Description:  Returns the field type corresponding
+		 *	to the integer input.  Provides bounds checking.
+		 *
+		 * Input variables:  int
+		 *
+		 * Return type:  string (the field type)
+		 **************************************/
+		public function get_field_type ( $counter )
+		{
+			// check that counter is not out-of-bounds: less than 0
+			// or more than the number of fields
+			if ( $counter < 0 || $counter >= count($this->field_type) )
+				return NULL;  // return NULL if out-of-bounds
+			
+			// return the field type
+			return $this->field_type[$counter];
+		}
+		
+		/**************************************
+		 * function get_values_from_form
+		 *
+		 * Description:  Takes an array ($_POST or $_GET)
+		 * 	and checks for data corresponding to the fields
+		 *	of this objects table columns.  It performs 
+		 *	escaping on the data and stores the cleaned
+		 *	data in the values array.  It also sets any missing
+		 *	fields or empty fields to NULL and sets checked checkboxes
+		 *	from "on" to "yes" for inserting into db.
+		 *
+		 * Input variables:  array
+		 *
+		 * Return type:  n/a
+		 **************************************/
+		public function get_values_from_form ( $elements ) 
+		{		
+			// create array to hold the cleaned and checked extracted data
+			$arr = array();
+		
+			// loop over $elements, cleaning and assigning
+			// each form element to the new array
+			for ( $i = 0; $i < count($this->fields); $i++ )
+			{
+				// first, test if element exists, then check if it is empty
+				if ( !isset($elements[$this->fields[$i]]) )
+					$elements[$this->fields[$i]] = 'NULL';     // create element if not set and set to NULL
+				else if ( $elements[$this->fields[$i]] == "" )     // if element is empty
+					$elements[$this->fields[$i]] = 'NULL';     // set to NULL
+				else if ( $elements[$this->fields[$i]] == "on" )   // A selected checkbox is "on"
+					$elements[$this->fields[$i]] = "yes";      // set to "yes" instead
+				else				
+					// use real_escape_string to escape the form element
+					$elements[$this->fields[$i]] = $this->db->real_escape_string($elements[$this->fields[$i]]);
+					
+				// assign the new checked and escaped value to arr
+				$arr[$i] = $elements[$this->fields[$i]];
+			}
+			
+			// set values to new array
+			$this->values = $arr;
+		}
+		
+		/**************************************
+		 * function get_value
+		 *
+		 * Description:  Returns the values corresponding
+		 *	to the input int.
+		 *
+		 * Input variables:  int
+		 *
+		 * Return type:  string (the value)
+		 **************************************/
+		public function get_value ( $counter )
+		{
+			// first, check that counter is not out-of-bounds: less than 0
+			// and more than the number of values in the table
+			if ( $counter < 0 || $counter >= count($this->values) )
+				return NULL;  // return NULL if out-of-bounds
+			
+			// return the value
+			return $this->values[$counter];
+		}
+		
+		/**************************************
+		 * function get_value_by_field
+		 *
+		 * Description:  Returns the value corresponding
+		 *	to the input field name.
+		 *
+		 * Input variables:  string (field name)
+		 *
+		 * Return type:  string (the value)
+		 **************************************/
+		public function get_value_by_field ( $field_name )
+		{
+			// use get_index_by_field_name to get the index of 
+			// the field represented by $field_name or -1 if not a valid field
+			$index = $this->get_index_by_field_name($field_name);
+			
+			// check that field is valid and then return value corresponding to
+			// the index in the values array
+			if ( $index != -1 )   // if $index is not -1 (index not found)
+				return $this->values[$index];
+			else                  // if not valid, 
+				return NULL;  // return NULL
+		}
+		
+		/**************************************
+		 * function get_index_by_field_name
+		 *
+		 * Description:  Returns a field's index in the fields
+		 *	array by iterating over fields and returning the
+		 *	first match.
+		 *
+		 * Input variables:  string (field name)
+		 *
+		 * Return type:  int (the field's index)
+		 **************************************/
+		private function get_index_by_field_name ( $field_name )
+		{
+			// loop over fields looking for a match to $field_name
+			for ( $i = 0; $i < count($this->fields); $i++ )
+			{
+				// if there is a match, return the index
+				if ( $this->fields[$i] == $field_name ) 
+					return $i;
+			}
+			
+			// If no match found this return -1
+			return -1;
+		}
+		
+		/**************************************
+		 * function is_valid    ***ABSTRACT***
+		 *
+		 * Description:  Abstract function that requires
+		 *	inheriting classes to define how data for the table
+		 *	the child class represents is considered valid.
+		 *
+		 * Input variables:  n/a
+		 *
+		 * Return type:  n/a
+		 **************************************/
+		protected abstract function is_valid ( );
+		
+		/**************************************
+		 * function exists    ***ABSTRACT***
+		 *
+		 * Description:  Abstract function that requires
+		 *	inheriting classes to define how it will 
+		 *	check if it already exists in the table.
+		 *
+		 * Input variables:  n/a
+		 *
+		 * Return type:  n/a
+		 **************************************/
+		protected abstract function exists ( );
+		
+		/**************************************
+		 * function insert_sql_query
+		 *
+		 * Description:  Constructs an insert SQL query
+		 *	based on the fields and values stored
+		 *	in private member variables.
+		 *
+		 * Input variables:  n/a
+		 *
+		 * Return type:  string (the query)
+		 **************************************/
+		function insert_sql_query ( ) 
+		{
+			// Create variable to hold query and start the statement
+			$query = "INSERT INTO $this->table_name (";
+			
+		 	// Add columns
+			for ( $i = 0; $i < count($this->fields); $i++ )
+			{
+				if ( $i == count($this->fields) - 1 )                       // last column
+					$query .= "'" . $this->fields[$i] . "') VALUES (";  // end columns and prepare for values
+				else
+					$query .= "'" . $this->fields[$i] . "', ";          // insert , between each column
+			}
+			
+			// Add values
+			for ( $i = 0; $i < count($this->fields); $i++ )
+			{
+				if ( $i == count($this->fields) - 1 )               // if last value
+					$query .= "'" . $this->values[$i] . "');";  // end statement
+				else
+					$query .= "'" . $this->values[$i] . "', ";  // insert , between each column
+			}
+			
+			// return the query string
+			return $query;
+		}
+		
+		/**************************************
+		 * function insert_sql_query_bound
+		 *
+		 * Description:  Constructs a SQL query based
+		 *	on the fields and values of the class.
+		 *	This query is a prepared query so values are
+		 *	represented by ?.  Returns the query as a string.
+		 *
+		 * Input variables:  n/a
+		 *
+		 * Return type:  string (the query)
+		 **************************************/
+		function insert_sql_query_bound ( ) 
+		{
+			// Create variable to hold query and start the statement
+			$query = "INSERT INTO $this->table_name (";
+			
+		 	// Add columns
+			for ( $i = 0; $i < count($this->fields); $i++ )
+			{
+				if ( $i == count($this->fields) - 1 )                // last column
+					$query .= $this->fields[$i] . ") VALUES (";  // end columns and prepare for values
+				else
+					$query .= $this->fields[$i] . ", ";          // insert , between each column
+			}
+			
+			// Add value markers '?' to statement
+			for ( $i = 0; $i < count($this->fields); $i++ )
+			{
+				if ( $i == count($this->fields) - 1 )  // last value
+					$query .= "?);";               // end statement
+				else
+					$query .= "?, ";               // insert , between each ?
+			}
+			
+			// return the query string
+			return $query;
+		}
+		
+		/**************************************
+		 * function create_bound_query
+		 *
+		 * Description:  Returns a string representation
+		 *	of a bind_param function executed on a Mysqli_stmt
+		 *	object.  This function constructs the statment
+		 *	based on the fields and values of the class.  Removes
+		 *	the need to have to manually code the bind_param statement
+		 *	thus reducing typing errors.
+		 *
+		 * Input variables:  n/a
+		 *
+		 * Return type:  string (bind_param statement as a string ready for eval())
+		 **************************************/
+		function create_bound_query ( )
+		{			
+			// define $bound_statment and add the first part of the statement
+			$bound_statement='$stmt->bind_param(\'';
+			
+			/**  FIRST, create first parameter to bind_param, types, and add to query **/
+			$types = "";  // to hold the first parameter to bind_param, the field types:  Ex:  'ssss' (4 strings)
+			// loop over field types adding to $types string
+			foreach ( $this->field_type as $val)   
+				$types .= $val; // build $types string from values in $field_types
+			
+			// add types to bound_statement
+			$bound_statement .= $types . '\', ';
+			
+			/** 
+			     NEXT, Add the field values to the bound statement by adding '$this->values[0]' ect to query 
+				Cannot add the actual values, has to be a variable that holds the value.                
+			 **/
+			for ( $i = 0; $i < count($this->fields); $i++ )    // iterate the number of times as fields and values
+			{			
+				// first check for last item to finish the statement differently 
+				if ( $i == count($this->fields) - 1 )   // last item
+					$bound_statement .= '$this->values[' . $i . "]);";  // add value variable and end statement
+				else 
+					$bound_statement .= '$this->values[' . $i . "], ";  // add value variable and a , in between each
+			}
+			
+			// return the bound statement query
+			return $bound_statement;
+		}
+		
+		/**************************************
+		 * function execute_bound_query
+		 *
+		 * Description:  Checks that values are valid for inserting
+		 *	and checks that this object has not already been added to 
+		 *	the table by using FirstName, LastName, and DOB as unique
+		 *	Secondary key, or Natural Key.  If valid and unique, execute
+		 *	the bound query that was created using insert_sql_query_bound
+		 *	and create_bound_query.  Write errors to $error_message with error()
+		 *	and return true or false for success or failure.
+		 *
+		 * Input variables:  n/a
+		 *
+		 * Return type:  bool
+		 **************************************/
+		public function execute_bound_query ( )
+		{
+			// First, check that values are valid by is_valid, 
+			// Then, check that there is not already a duplicate record in the table
+			// with the same FirstName, LastName, and DOB with exists()
+			if ( !$this->is_valid() )   // not valid
+				return false;       // so return false and exit function
+			
+			if ( $this->exists() )      // already exists
+				return false;       // so return false and exit
+					
+			// get the query string from insert_sql_query_bound
+			$query = $this->insert_sql_query_bound();
+			
+			// get the statement object from prepare function of mysqli
+			// pass the query created above to prepare; use db in parent that
+			// references the db object to query against
+			if ( !$stmt = $this->db->prepare($query) )
+			{
+				// set the error alerting that query was unsuccessful
+				$this->error('Alert', 'Query was unsucessful; Please try again.');
+				return false;   // if preparing the query failed return false
+			}
+			
+			// get the bound->param statement from create_bound_query and then
+			// use eval to execute it.
+			$bound_stmt = $this->create_bound_query();
+			eval($bound_stmt);
+			
+			// execute the statement returning true if sucessful; use if statement
+			// to be able to set the error message if query fails
+			if ( $this->is_valid() )
+				return $stmt->execute();
+			else 
+			{
+				// set the error alerting that query was unsuccessful
+				$this->error('Alert', 'Query was unsucessful; Please try again.');
+				return false;
+			}
+		}
+		
+		/*******************************************
+		 * function get_error_message
+		 *
+		 * Description:  Getter for $error_message; simply returns $error_message variable.
+		 *
+		 * Input variables:  n/a
+		 *
+		 * Return type:  string (the error message)
+		 ******************************************/
+		public function get_error_message ( )
+		{
+			return $this->error_message;
+		}
+		
+		/*******************************************
+		 * function error
+		 *
+		 * Description:  Setter for error message that actually
+		 *	just concatenates error strings to $error_message.
+		 *
+		 * Input variables:  string (field name or descriptive tag like 'Alert'), string (concise error description)
+		 *
+		 * Return type:  n/a
+		 ******************************************/
+		protected function error ( $field, $message )
+		{
+			// First, check if error message is empty, if so add
+			// a ; (the delineator) after the first string added
+			if ( $this->error_message == "" ) 
+				$this->error_message .= $field . ":" . $message . ";";
+			else  // if not empty, add the new field and message delinated by a :
+				$this->error_message .= $field . ":" . $message;
+		}
+	}
+	
+	
+	/*****************************************************
+	 * Class Attendee
+	 *
+	 * Description:  Extends the DBTable class and defines a
+	 *	table attendee in the attendencetracker db.
+	 *	The constructor sets the fields and gets the class'
+	 *	values.
+	 *
+	 ****************************************************/
+	class Attendee extends DBTable
+	{
+		/*********************************************
+		 * Constructor
+		 *
+		 * Description: Sets the fields of table and stores
+		 *	in inherited array.  Sets the field types.
+		 *	Then uses function to get values from form or
+		 *	db table.
+		 *
+		 * Input variables: db object to pass to parent constructor,
+		 *	array that holds the values of fields
+		 *
+		 * Return type: n/a
+		 *********************************************/
+		function __construct( $db, $elements )
+		{
+			// first call the parent constructor passing the name of the table for this child class
+			parent::__construct($db, 'attendee');
+			
+			$attendee_fields = array();
+			
+			$attendee_fields[0] = "FirstName";
+			$attendee_fields[1] = "LastName";
+			$attendee_fields[2] = "MiddleName";
+			$attendee_fields[3] = "NickName";
+			$attendee_fields[4] = "StreetAddress";
+			$attendee_fields[5] = "Zip";
+			$attendee_fields[6] = "HomePhone";
+			$attendee_fields[7] = "CellPhone";
+			$attendee_fields[8] = "CanReceiveTxt";
+			$attendee_fields[9] = "Facebook";
+			$attendee_fields[10] = "Myspace";
+			$attendee_fields[11] = "Occupation";
+			$attendee_fields[12] = "WorkPhone";
+			$attendee_fields[13] = "PictureURL";
+			$attendee_fields[14] = "Email";
+			$attendee_fields[15] = "FavoriteThings";
+			$attendee_fields[16] = "PicturePolicy";
+			$attendee_fields[17] = "ReleaseForm";
+			$attendee_fields[18] = "ReleaseFormUpdate";
+			$attendee_fields[19] = "TShirtSize";
+			$attendee_fields[20] = "BroughtBy";
+			$attendee_fields[21] = "Sex";
+			$attendee_fields[22] = "Ethnicity";
+			$attendee_fields[23] = "DOB";
+			$attendee_fields[24] = "SubDiscriminator";
+			$attendee_fields[25] = "DateSaved";
+			$attendee_fields[26] = "DateBaptized";
+			$attendee_fields[27] = "DateHolyGhost";
+			$attendee_fields[28] = "Notes";
+			
+			$this->fields = $attendee_fields;
+			
+			$fields_type = array();
+			
+			$fields_type[0] = "s";
+			$fields_type[1] = "s";
+			$fields_type[2] = "s";
+			$fields_type[3] = "s";
+			$fields_type[4] = "s";
+			$fields_type[5] = "s";
+			$fields_type[6] = "s";
+			$fields_type[7] = "s";
+			$fields_type[8] = "s";
+			$fields_type[9] = "s";
+			$fields_type[10] = "s";
+			$fields_type[11] = "s";
+			$fields_type[12] = "s";
+			$fields_type[13] = "s";
+			$fields_type[14] = "s";
+			$fields_type[15] = "s";
+			$fields_type[16] = "s";
+			$fields_type[17] = "s";
+			$fields_type[18] = "s";
+			$fields_type[19] = "s";
+			$fields_type[20] = "s";
+			$fields_type[21] = "s";
+			$fields_type[22] = "s";
+			$fields_type[23] = "s";
+			$fields_type[24] = "s";
+			$fields_type[25] = "s";
+			$fields_type[26] = "s";
+			$fields_type[27] = "s";
+			$fields_type[28] = "s";
+			
+			$this->field_type = $fields_type;
+			
+			$this->get_values_from_form($elements);
+		}
+		
+		/*********************************************
+		 * function is_valid
+		 *
+		 * Description: Overridden abstract function from parent
+		 *	that describes which data must be valid and is called
+		 *	before submitting any data to a db.  FirstName, LastName,
+		 *	Set, and DOB must be set and not NULL or empty.
+		 *
+		 * Input variables: n/a
+		 *
+		 * Return type: bool
+		 *********************************************/
+		public function is_valid ( )
+		{
+			// variable to hold whether the tests for validity have passed
+			$valid = true;  // start at true since no test have failed yet
+			
+			// Test that necessary values are set and do not equal NULL; if so, set
+			// $valid_values to true.  Necessary values are:  FirstName, LastName,
+			// Sex, and DOB.  Use get_value_by_field to get the value to test.
+			// Add any errors to the $error_message variable
+			if ( $this->get_value_by_field('FirstName') == 'NULL' ) 
+			{
+				$valid = false;
+				$this->error("FirstName", "First name cannot be blank.");
+			}
+			
+			if ( $this->get_value_by_field('LastName') == 'NULL' )
+			{
+				$this->error("LastName", "Last name cannot be blank.");
+				$valid = false;
+			}
+			
+			if ( $this->get_value_by_field('Sex') == 'NULL' )
+			{
+				$this->error("Sex", "Sex cannot be blank.");
+				$valid = false;
+			}
+			
+			if ( $this->get_value_by_field('DOB') == 'NULL' )
+			{
+				$this->error("DOB", "DOB cannot be blank.");
+				$valid = false;
+			}
+			
+			if ( $valid )  // all tests passed so set valid_values to true
+				$this->valid_values = true;	
+			
+			// return value of valid_values to calling function; default for valid values 
+			// is false, so unless changed by successful testing in function it will be false
+			return $this->valid_values;
+		}
+			
+		/*********************************************
+		 * function exists
+		 *
+		 * Description: Overridden abstract function from parent
+		 *	that checks the db to make sure that the current
+		 *	object does not already exist in the table.  
+		 *	This is deteremined by whether FirstName, LastName,
+		 *	and DOB are identical to a record in the table.
+		 *
+		 * Input variables: n/a
+		 *
+		 * Return type: bool
+		 *********************************************/
+		public function exists ( )
+		{
+			// Build the SQL query to check for existing records that match FirstName, LastName, and DOB
+			$select_query = "SELECT FirstName, LastName, DOB FROM attendee WHERE DOB = '" . $this->get_value_by_field('DOB') . "' OR FirstName = '" . $this->get_value_by_field('FirstName') . "' OR LastName = '" . $this->get_value_by_field('LastName') . "';";
+			// execute the query against the db and check that it was successful and that there was no matching rows returned 
+			if ( $result = $this->db->query($select_query) )  
+			{
+				if ( $result->num_rows != 0 )  // there was a result to the query
+				{
+					// first add to the error message
+					$this->error('Alert', 'Record already exists.');  // Use Alert as field name to create unique error message
+					return true;          // return true since a record already exists
+				}
+				else                     // no rows return from query
+					return false;    // so return false, record does not exist
+			}	
+			
+			// if query failed, return an error and true as default since it is possible that the record does exist in the table
+			$this->error('Alert', 'Record might already exist in table.');  // Use Alert as field name to create unique error message
+			return true;                                                    // return true since a record possibly exists
+		}
+	}
+	
+	/*****************************************************
+	 * Class Student
+	 *
+	 * Description:  Extends the DBTable class and defines a
+	 *	table student in the attendencetracker db.
+	 *	The constructor sets the fields and gets the class'
+	 *	values.
+	 *
+	 ****************************************************/
+	class Student extends DBTable
+	{
+		/*********************************************
+		 * Constructor
+		 *
+		 * Description: Sets the fields of table and stores
+		 *	in inherited array.  Sets the field types.
+		 *	Then uses function to get values from form or
+		 *	db table.
+		 *
+		 * Input variables: db object to pass to parent constructor,
+		 *	array that holds the values of fields
+		 *
+		 * Return type: n/a
+		 *********************************************/
+		function __construct( $db, $elements )
+		{
+			// first call the parent constructor passing the name of the table for this child class
+			parent::__construct($db, 'student');
+			
+			$student_fields = array();
+			
+			$student_fields[0] = "ID";
+			$student_fields[1] = "OtherChurch";
+			$student_fields[2] = "PreviousChurch";
+			$student_fields[3] = "SchoolName";
+			$student_fields[4] = "GraduationDate";
+			$student_fields[5] = "StartDate";
+			$student_fields[6] = "LeaveDate";
+			$student_fields[7] = "LeaveReason";
+			
+			$this->fields = $student_fields;
+			
+			$fields_type = array();
+			
+			$fields_type[0] = "i";
+			$fields_type[1] = "s";
+			$fields_type[2] = "s";
+			$fields_type[3] = "s";
+			$fields_type[4] = "s";
+			$fields_type[5] = "s";
+			$fields_type[6] = "s";
+			$fields_type[7] = "s";
+			
+			$this->field_type = $fields_type;
+			
+			$this->get_values_from_form($elements);
+		}
+		
+		/*********************************************
+		 * function is_valid
+		 *
+		 * Description: Overridden abstract function from parent
+		 *	that describes which data must be valid and is called
+		 *	before submitting any data to a db.  No fields are 
+		 *	required and no special checking needed so set valid_values
+		 *	to true and return.
+		 *
+		 * Input variables: n/a
+		 *
+		 * Return type: bool
+		 *********************************************/
+		// overridden abstract function
+		public function is_valid ( )
+		{
+			// Since all fields in Student can be NULL this $valid_values
+			// is true; no checking required.
+			$this->valid_values = true;
+			
+			return $this->valid_values;	
+		}
+		
+		/*********************************************
+		 * function set_id
+		 *
+		 * Description: Sets the ID field for student.
+		 *	First checks that input is an integer.
+		 *	Returns true or false for success or failure.
+		 *
+		 * Input variables: int
+		 *
+		 * Return type: bool
+		 *********************************************/
+		public function set_id ( $id )
+		{
+			// first validate that input is an integer with is_int
+			if ( is_int($id) )   
+			{
+				// if is an int, then set id and return true
+				$this->values[0] = $id;
+				return true;
+			}
+			else 
+			{
+				// if not an int, set error message accordingly
+				// and return false
+				$this->error("ID", "ID must be an integer.");
+				return false;
+			}
+		}
+		
+		/*********************************************
+		 * function exists
+		 *
+		 * Description: Overridden abstract function from parent
+		 *	that checks the db to make sure that the current
+		 *	object does not already exist in the table.  
+		 *	Student is dependent on attendee table and therefore
+		 *	will already be verified by attendee table's exists 
+		 *	function.
+		 *
+		 * Input variables: n/a
+		 *
+		 * Return type: bool
+		 *********************************************/
+		public function exists ( )
+		{
+			return false;   // return false as default
+		}
+	}
+
+	$attendee_fields = array( );
+	$attendee_fields[0] = "FirstName";
+	$attendee_fields[1] = "LastName";
+	$attendee_fields[2] = "MiddleName";
+	$attendee_fields[3] = "NickName";
+	$attendee_fields[4] = "StreetAddress";
+	$attendee_fields[5] = "Zip";
+	$attendee_fields[6] = "HomePhone";
+	$attendee_fields[7] = "CellPhone";
+	$attendee_fields[8] = "CanReceiveTxt";
+	$attendee_fields[9] = "Facebook";
+	$attendee_fields[10] = "Myspace";
+	$attendee_fields[11] = "Occupation";
+	$attendee_fields[12] = "WorkPhone";
+	$attendee_fields[13] = "PictureURL";
+	$attendee_fields[14] = "Email";
+	$attendee_fields[15] = "FavoriteThings";
+	$attendee_fields[16] = "PicturePolicy";
+	$attendee_fields[17] = "ReleaseForm";
+	$attendee_fields[18] = "ReleaseFormUpdate";
+	$attendee_fields[19] = "TShirtSize";
+	$attendee_fields[20] = "BroughtBy";
+	$attendee_fields[21] = "Sex";
+	$attendee_fields[22] = "Ethnicity";
+	$attendee_fields[23] = "DOB";
+	$attendee_fields[24] = "SubDiscriminator";
+	$attendee_fields[25] = "DateSaved";
+	$attendee_fields[26] = "DateBaptized";
+	$attendee_fields[27] = "DateHolyGhost";
+	$attendee_fields[28] = "Notes";
+	
+	$student_fields = array( );
+	$student_fields[0] = "OtherChurch";
+	$student_fields[1] = "PreviousChurch";
+	$student_fields[2] = "SchoolName";
+	$student_fields[3] = "GraduationDate";
+	$student_fields[4] = "StartDate";
+	$student_fields[5] = "LeaveDate";
+	$student_fields[6] = "LeaveReason";
+	
+	$sponsor_fields = array( );
+	$sponsor_fields[] = "BackgroundCheck";
+	$sponsor_fields[] = "VanEligible";
+	$sponsor_fields[] = "MaritalStatus";
+	$sponsor_fields[] = "Anniversary";
+	
+	
+	/*************************************************
+	 * build_insert_sql_query function
+	 *
+	 * Description:  takes an array of column values and
+	 *	an array of form elements and
+	 * 	builds an insert SQL query to insert
+	 *	into the specified (the first parameter) table.
+	 * 
+	 * Input varables:  a table to inser into, two arrays
+	 *
+	 * Return variables:  the SQL statement as a string
+	 ************************************************/
+	function build_insert_sql_query ( $table, $columns, $values ) 
+	{
+		// Create variable to hold query and start the statement
+		$query = "INSERT INTO $table (";
+		
+		/**
+		 * Now, create the meat of the query by looping over columns
+		 * 	appending the elements to the query then looping over values
+		 * 	doing the same thing.  
+		 * Use columns as keys to the values array and if a value is not
+		 *	set then set it to NULL.
+		 **/
+		// Add columns
+		for ( $i = 0; $i < count($columns); $i++ )
+		{
+			if ( $i == count($columns) - 1 ) // last column
+				$query .= "'" . $columns[$i] . "') VALUES (";  // end columns and prepare for values
+			else
+				$query .= "'" . $columns[$i] . "', ";  // insert , between each column
+		}
+		
+		// Add values
+		for ( $i = 0; $i < count($columns); $i++ )
+		{
+			if ( $i == count($columns) - 1 ) // last value
+			{
+				// check that current value is set
+				if ( !isset($values[$columns[$i]]) )
+					$query .= "'NULL');";  // end columns and prepare for values
+				else
+					$query .= "'" . $values[$columns[$i]] . "');";  // end columns and prepare for values
+			}
+			else
+			{
+				// check that current value is set
+				if ( !isset($values[$columns[$i]]) )
+					$query .= "'NULL', ";  // insert , between each column
+				else
+					$query .= "'" . $values[$columns[$i]] . "', ";  // insert , between each column
+			}
+		}
+		
+		// return the query string
+		return $query;
+	}
+	
+
+	require_once('MYSQL_helper.php');
+	$db = db_connect();
+	
+	if (mysqli_connect_errno()) 
+	{
+		die("Unable to connect to database:  " . mysqli_connect_error() );
+		echo "<p style='color:red'>Sorry, the database is down.  Please try again later.</p>";
+	}
+	
+	/*
+	$clean = clean_form_elements_for_db($db, $_POST);
+	
+	
+	$clean['DOB'] = build_date_from_form($clean, 'dobYear', 'dobMonth', 'dobDay');
+        $clean['ReleaseFormUpdate'] = build_date_from_form($clean, 'releaseYear', 'releaseMonth', 'releaseDay');
+        $clean['DateSaved'] = build_date_from_form($clean, 'dateSavedYear', 'dateSavedMonth', 'dateSavedDay');
+        $clean['DateBaptized'] = build_date_from_form($clean, 'dateBaptizedYear', 'dateBaptizedMonth', 'dateBaptizedDay');
+        $clean['DateHolyGhost'] = build_date_from_form($clean, 'dateHolyGhostYear', 'dateHolyGhostMonth', 'dateHolyGhostDay');
+        
+        unset($clean['submit']);
+	
+	
+	$query = build_insert_sql_query('attendee', $attendee_fields, $clean);
+	echo $query;
+	*/
+	
+	$_POST['DOB'] = build_date_from_form($_POST, 'dobYear', 'dobMonth', 'dobDay');
+        $_POST['ReleaseFormUpdate'] = build_date_from_form($_POST, 'releaseYear', 'releaseMonth', 'releaseDay');
+        $_POST['DateSaved'] = build_date_from_form($_POST, 'dateSavedYear', 'dateSavedMonth', 'dateSavedDay');
+        $_POST['DateBaptized'] = build_date_from_form($_POST, 'dateBaptizedYear', 'dateBaptizedMonth', 'dateBaptizedDay');
+        $_POST['DateHolyGhost'] = build_date_from_form($_POST, 'dateHolyGhostYear', 'dateHolyGhostMonth', 'dateHolyGhostDay');
+        
+        	/**************/
+	
+	if ((($_FILES["file"]["type"] == "image/gif")
+|| ($_FILES["file"]["type"] == "image/jpeg")
+|| ($_FILES["file"]["type"] == "image/pjpeg"))
+&& ($_FILES["file"]["size"] < 50000))
+  {
+  if ($_FILES["file"]["error"] > 0)
+    {
+    echo "Return Code: " . $_FILES["file"]["error"] . "<br />";
+    }
+  else
+    {
+    echo "Upload: " . $_FILES["file"]["name"] . "<br />";
+    echo "Type: " . $_FILES["file"]["type"] . "<br />";
+    echo "Size: " . ($_FILES["file"]["size"] / 1024) . " Kb<br />";
+    echo "Temp file: " . $_FILES["file"]["tmp_name"] . "<br />";
+
+    if (file_exists("upload/" . $_FILES["file"]["name"]))
+      {
+      echo $_FILES["file"]["name"] . " already exists. ";
+      }
+    else
+      {
+      move_uploaded_file($_FILES["file"]["tmp_name"],
+      "profile_pictures/" . $_FILES["file"]["name"]);
+      echo "Stored in: " . "profile_pictures/" . $_FILES["file"]["name"];
+      
+      // Set the $_POST value for the picture
+      $_POST['PictureURL'] = "profile_picture/" . $db->real_escape_string($_FILES['file']['name']);
+      printf("<br /><br />PictureURL:  %s<br /><br />", $db->real_escape_string($_POST['PictureURL']));
+      }
+    }
+  }
+else
+  {
+  echo "Invalid file";
+  }
+  /*******/
+        
+	$a = new Attendee($db, $_POST);
+	$s = new Student($db, $_POST);
+			
+	$success = $a->execute_bound_query();
+	
+
+				
+	
+	if ( $success )
+	{
+		echo "ID of last query:  " . $db->insert_id . ".";
+		// set and insert student
+	$success = $s->set_id($db->insert_id);
+	if ( $success ) 
+		$success = $s->execute_bound_query();
+	else 
+	{
+		echo $s->get_error_message() . "<br />";
+		echo "Set id failed.";
+	}
+		
+	if ( $success ) 
+		echo "Successfully entered student with id:  " . $db->insert_id . "<br />";
+	else
+	{
+		echo $s->get_error_message() . "<br />";
+		echo "Insert student failed.<br />";
+	}
+	}
+	else 
+		echo $a->get_error_message() . "<br />";
+		
+		
+	
+		
+	
+?>
+
+</body>
+</html>

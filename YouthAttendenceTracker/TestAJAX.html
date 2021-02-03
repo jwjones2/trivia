@@ -1,0 +1,35 @@
+<html>
+	<head>
+	<title></title>
+	
+	<script type="text/javascript" language="Javascript">
+		function loadXMLDoc()
+		{
+			var value = "info=" + document.getElementById('info').value;
+			xmlhttp.open("POST","./TestAjax.php",true);
+			xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=UTF-8");			
+			
+			xmlhttp.send(value);
+		}
+	</script>
+	
+	<script type="text/javascript" language="javascript" src="./AJAX.js"> </script>
+	</head>
+<body>
+	<div id="mydiv" style="background-color: yellow;"> </div>
+	
+	<div>
+		<form action="" method="POST">
+		<table>
+			<tr>
+				<td>Enter some stuff to count the characters of:  </td>
+				<td><input type="text" name="info" value="" id="info" /></td>
+			</tr>
+			<tr>
+				<td colspan="2" align="center"><input type="button" value="Count" name="submit" onclick="loadXMLDoc();" /></td>
+			</tr>
+		</table>
+		</form>
+	</div>
+</body>
+</html>

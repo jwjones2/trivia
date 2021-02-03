@@ -1,0 +1,83 @@
+/**********************************************
+ *       MASTER CSS FOR CALENDAR CLASS       *
+ *                                                                       *
+ * These styles needed for colors and some    *
+ * positioning within the calendar div.               *
+ **********************************************/
+
+/* =calendar
+ CALENDAR styling for Calendar class 
+ *******************************************************************************/
+/* The id "calendar" is the containing div for all calendar content */
+#calendar {
+	position: absolute;
+	left: 150px;
+	top: 170px;
+	z-index: 9;
+	/*border: 1px solid #3a2f01;*/
+	/*color: #3a2f01;*/
+	font-family: sans-serif;
+	font-weight: bold;
+}
+/* links inside the calendar div */
+#calendar a {
+	text-decoration: none;
+}
+/* the header containing the calendar date and previous/next month links */
+#header {
+	text-align: center;
+	font-size: 18px;
+	height: 30px;
+	letter-spacing: 8px;
+}
+
+/* the header containing day names -- "Sun Mon Tues ... Sat" */
+#dayHeader {
+	text-align: center;
+}
+/* styles the individual cells inside dayHeader div (some formatting can be placed directly in dayHeader styling) */
+#dayHeader .cell {
+	background-color: #C73B0B;
+}
+/* styling for days/cells of the calendar */
+.cell {
+	border: 1px solid Black;	
+}
+/* the number (or other designator) for the day in the cell for that day */
+#day {
+	position: absolute;
+	top: 2px;
+	right: 2px;
+}
+/* the content of the cell for each day */
+.dayContent { 
+	position: relative;
+	top: 3px;
+	left: 3px;
+	z-index; 2;
+}
+
+.service-listing {
+	position: relative;
+	top: 30px;
+	font-size: 16px;
+	font-family: serif;
+	color: #C73B0B;
+}
+
+.add-service {
+	position: relative;
+	top: 10px;
+	font-size: 25px;
+	color: #978E43;
+	cursor: hand;
+	cursor: pointer;
+}
+
+.submitted-yes {
+	
+}
+
+.submitted-no {
+	color: Red;
+}

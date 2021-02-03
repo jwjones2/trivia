@@ -1,0 +1,15 @@
+Dark Blue text:  006363
+Light Green:  39e639
+Dark Red: A60000
+Red: ff0000
+Light Orange: ff9640
+
+____
+NEW
+Blue: 0c6ac8
+Medium Blue:  4395e3
+Lightest Blue:  6eaae3
+Yellow Complementary:  ff9700
+
+color scheme from colorschemedesigner.com:  http://colorschemedesigner.com/#3.21TAXHkw0w0
+
